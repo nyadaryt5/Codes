@@ -1,62 +1,80 @@
-# TitanFuse
+# Veridian
 
-One CLI that **combines** three high-impact LLM training projects:
+**A causal worldline lattice for software that must remember *why*.**
 
-| Layer | Project | Role |
-| --- | --- | --- |
-| Cluster pretrain | [TorchTitan](https://github.com/pytorch/torchtitan) (Meta / PyTorch) | Native PyTorch 4D-parallel (DP × TP × PP × CP) blueprint |
-| Kernel speedups | [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) (LinkedIn) | Triton kernels — ~**+20%** throughput, ~**−60%** memory on HF trainers |
-| Consumer fine-tune | [Unsloth](https://github.com/unslothai/unsloth) | LoRA / QLoRA on a single GPU |
+Neural nets have weights. Databases have rows. Neither has a **physics of memory**: claims that decay, disagree, cite their parents, and refuse to train on their own exhaust.
 
-This repo does **not** vendor those codebases. It is a **router, validator, memory heuristic, and recipe generator**.
+Veridian is that physics.
 
 ```
-workload / hardware
-        │
-        ▼
-   TitanFuse.auto
-   ├── 1× consumer GPU, SFT/QLoRA  → Unsloth
-   ├── multi-GPU HF SFT / distill  → Liger-Kernel
-   └── pretrain or 8+ GPUs         → TorchTitan
+sensor ──► observation ──► worldline ──► lattice
+                │              │
+           half-life      log-odds merge
+                │              │
+           gen_depth      counterfactual fork
 ```
+
+Not a blockchain. Not a vector DB. Not a knowledge graph. An **append-only DAG of observations** with:
+
+1. **Content-addressed provenance** — SHA-256 of canonical payload + causal parents  
+2. **Exponential half-life** — last March’s wiki page is not “true,” it is *cold*  
+3. **Conflict as a first-class value** — incompatible payloads fork; they are never averaged into mush  
+4. **Generation depth** — human/sensor = 0; a model quoting a model is 2; policy can refuse 3+ (synthetic collapse)  
+5. **Energy budgets** — every append/query costs joule-equivalents so agent loops terminate  
+6. **What-if** — drop a lying sensor and *all descendants* vanish with it  
+
+## Why this exists
+
+Future stacks (robot fleets, multi-agent labs, regulated copilots, continual pretrain) fail in the same ways:
+
+| Failure mode | Veridian primitive |
+| --- | --- |
+| Stale RAG | `decayed_confidence(now)` / `as_of_ns` |
+| Agents clobber shared state | worldlines + logit merge |
+| Model-on-model data collapse | `GenerationGuard` |
+| Infinite tool use | `EnergyBudget` |
+| Un-auditable decisions | parent hash chain |
+| “Ignore that sensor” | `without(lattice, ids)` |
+
+TitanFuse (Unsloth / Liger / TorchTitan router) remains in-tree as a *training* sidecar. Veridian is the **memory substrate** those trainers do not have.
 
 ## Install
 
 ```bash
 pip install -e ".[dev]"
 pytest -q
-```
-
-Optional heavy backends:
-
-```bash
-pip install unsloth
-pip install liger-kernel
-# TorchTitan: https://github.com/pytorch/torchtitan
+python examples/reactor_worldline.py
 ```
 
 ## CLI
 
 ```bash
-titanfuse backends
-titanfuse recommend --gpus 1 --vram 16
-titanfuse recommend --pretrain --gpus 16
-titanfuse plan configs/consumer_sft.yaml
-titanfuse plan configs/hf_liger.yaml --json
-titanfuse estimate configs/cluster_pretrain.yaml --gpus 32 --vram 80
-titanfuse serve --host 127.0.0.1 --port 8765
+veridian init lattice.json
+veridian claim lattice.json --subject reactor.core --predicate temperature_c --object loop-a --value 312.4
+veridian query lattice.json --subject reactor.core
+veridian entropy lattice.json
+veridian serve --host 0.0.0.0 --port 8787
 ```
 
-Open `http://127.0.0.1:8765/` for the planner UI (`GET /health`, `GET /api/recommend`).
+## Library
 
-## Design
+```python
+from veridian.factory import claim
+from veridian.lattice import Lattice
+from veridian.observation import Triple
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Configs live in `configs/`. `backend: auto` uses GPU count, VRAM, and `workload`.
+lat = Lattice()
+claim(lat, subject="dock.3", predicate="occupied", obj="berth", value=True, agent_id="lidar")
+print(lat.belief(Triple("dock.3", "occupied", "berth")))
+print(lat.entropy())
+```
+
+## Docs
+
+- [docs/VERIDIAN.md](docs/VERIDIAN.md) — algebra and threat model  
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — TitanFuse router (optional)  
+- [SECURITY.md](SECURITY.md) — no tokens, localhost by default  
 
 ## License
 
-MIT. Upstream projects keep their own licenses. Use them directly for training.
-
-## Security
-
-Do not commit tokens. Do not paste GitHub PATs into third-party scoring sites. See [SECURITY.md](SECURITY.md).
+MIT. Original work. Upstream LLM trainers keep their own licenses.
