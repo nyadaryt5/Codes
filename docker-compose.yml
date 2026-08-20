@@ -1,0 +1,11 @@
+services:
+  veridian:
+    build: .
+    ports:
+      - "8787:8787"
+    command: ["veridian", "serve", "--host", "0.0.0.0", "--port", "8787"]
+  titanfuse:
+    build: .
+    ports:
+      - "8765:8765"
+    command: ["titanfuse", "serve", "--host", "0.0.0.0", "--port", "8765"]
