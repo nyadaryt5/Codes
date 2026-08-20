@@ -11,11 +11,18 @@ requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Veridian" }]
 dependencies = [
-  "pyyaml>=6.0",
+  "pyyaml==6.0.2",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0"]
+dev = [
+  "pytest==8.3.5",
+  "pytest-cov==6.0.0",
+  "coverage==7.6.12",
+  "ruff==0.9.10",
+  "mypy==1.15.0",
+  "types-PyYAML==6.0.12.20241230",
+]
 
 [project.scripts]
 veridian = "veridian.cli:main"
@@ -25,7 +32,36 @@ titanfuse = "titanfuse.cli:main"
 include = ["veridian*", "titanfuse*"]
 
 [tool.setuptools.package-data]
-veridian = ["static/*"]
+veridian = ["static/*", "py.typed"]
+titanfuse = ["py.typed"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-q --cov=veridian --cov=titanfuse --cov-report=term-missing --cov-fail-under=60"
+
+[tool.coverage.run]
+branch = true
+source = ["veridian", "titanfuse"]
+
+[tool.coverage.report]
+fail_under = 60
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+src = ["veridian", "titanfuse", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.11"
+packages = ["veridian", "titanfuse"]
+ignore_missing_imports = true
+warn_unused_ignores = true
+check_untyped_defs = true

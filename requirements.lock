@@ -1,0 +1,15 @@
+# Locked from pyproject.toml optional-dev + runtime. Recreate with:
+#   python -m pip install -e ".[dev]" && pip freeze | grep -v '^-e '
+coverage==7.6.12
+iniconfig==2.3.0
+mypy==1.15.0
+mypy_extensions==1.1.0
+packaging==26.3
+pluggy==1.6.0
+Pygments==2.21.0
+pytest==8.3.5
+pytest-cov==6.0.0
+PyYAML==6.0.2
+ruff==0.9.10
+types-PyYAML==6.0.12.20241230
+typing_extensions==4.16.0
