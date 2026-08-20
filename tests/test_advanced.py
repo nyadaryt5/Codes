@@ -1,21 +1,20 @@
+import pytest
 from veridian.certificate import issue
+from veridian.cone import future, incomparable, past
 from veridian.conformal import predict
-from veridian.datalog import Rule, infer
+from veridian.datalog import Rule, infer, materialize
+from veridian.errors import IntegrityError
 from veridian.factory import claim
 from veridian.federation import Peer
 from veridian.geo import geohash, neighbors
 from veridian.kalman import filter_values
 from veridian.lattice import Lattice
 from veridian.merkle import MerkleLog
-from veridian.observation import Triple
+from veridian.observation import Observation, Triple
 from veridian.privacy import release
+from veridian.quorum import Quorum
 from veridian.temporal import from_threshold
 from veridian.watermark import embed, matches
-from veridian.cone import future, incomparable, past
-from veridian.errors import IntegrityError
-from veridian.quorum import Quorum
-from veridian.observation import Observation
-import pytest
 
 
 def test_merkle_inclusion():
@@ -72,6 +71,19 @@ def test_datalog_transitivity():
     rule = Rule(head=("?x", "path", "?z"), body=(("?x", "path", "?y"), ("?y", "path", "?z")))
     derived = infer(lat, [rule])
     assert any(t.subject == "a" and t.object == "c" for t in derived)
+
+
+def test_datalog_materialize_writes_claims():
+    lat = Lattice()
+    claim(lat, subject="a", predicate="path", obj="b", value=True, agent_id="m")
+    claim(lat, subject="b", predicate="path", obj="c", value=True, agent_id="m")
+    rule = Rule(head=("?x", "path", "?z"), body=(("?x", "path", "?y"), ("?y", "path", "?z")))
+    derived = materialize(lat, [rule], agent_id="reasoner")
+    assert derived
+    line = lat.worldline(derived[0])
+    assert line is not None
+    assert line.latest() is not None
+    assert line.latest().gen_depth == 1
 
 
 def test_certificate_verifies():

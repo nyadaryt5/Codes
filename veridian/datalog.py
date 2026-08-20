@@ -62,3 +62,23 @@ def infer(lattice: Lattice, rules: list[Rule], *, max_rounds: int = 8) -> list[T
         if not grew:
             break
     return derived
+
+
+def materialize(lattice: Lattice, rules: list[Rule], *, agent_id: str = "reasoner") -> list[Triple]:
+    """Write derived triples onto the lattice as gen_depth=1 claims."""
+    from veridian.factory import claim
+
+    derived = infer(lattice, rules)
+    for trip in derived:
+        claim(
+            lattice,
+            subject=trip.subject,
+            predicate=trip.predicate,
+            obj=trip.object,
+            value=True,
+            agent_id=agent_id,
+            sensor_id="datalog",
+            gen_depth=1,
+            confidence=0.6,
+        )
+    return derived
