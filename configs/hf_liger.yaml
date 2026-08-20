@@ -1,0 +1,11 @@
+backend: liger
+workload: sft
+model: meta-llama/Llama-3.1-8B
+dataset: yahma/alpaca-cleaned
+max_seq_len: 4096
+batch_size: 4
+grad_accum: 4
+learning_rate: 1.0e-4
+use_4bit: false
+use_liger: true
+output_dir: outputs/liger-sft

@@ -1,3 +1,18 @@
+Metadata-Version: 2.4
+Name: titanfuse
+Version: 0.1.0
+Summary: Unified LLM training stack combining TorchTitan, Liger-Kernel, and Unsloth
+Author: TitanFuse
+License: MIT
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pyyaml>=6.0
+Provides-Extra: unsloth
+Provides-Extra: liger
+Provides-Extra: titan
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+
 # TitanFuse
 
 One CLI that **combines** three high-impact LLM training projects:

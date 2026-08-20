@@ -1,0 +1,2 @@
+[console_scripts]
+titanfuse = titanfuse.cli:main

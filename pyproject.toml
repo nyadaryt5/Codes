@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "titanfuse"
+version = "0.1.0"
+description = "Unified LLM training stack combining TorchTitan, Liger-Kernel, and Unsloth"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "TitanFuse" }]
+dependencies = [
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+unsloth = []
+liger = []
+titan = []
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+titanfuse = "titanfuse.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["titanfuse*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
