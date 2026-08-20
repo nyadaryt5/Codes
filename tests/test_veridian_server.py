@@ -1,9 +1,17 @@
+import logging
+from http.server import ThreadingHTTPServer
 from threading import Thread
 from urllib.request import urlopen
 
-from veridian.server import _handler
 from veridian.lattice import Lattice
-from http.server import ThreadingHTTPServer
+from veridian.server import _handler, serve
+
+
+def test_serve_emits_info_log(caplog, monkeypatch):
+    monkeypatch.setattr(ThreadingHTTPServer, "serve_forever", lambda self: None)
+    with caplog.at_level(logging.INFO, logger="veridian.server"):
+        serve("127.0.0.1", 0)
+    assert "veridian listening" in caplog.text
 
 
 def test_health_page():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -10,6 +11,8 @@ from veridian.factory import claim
 from veridian.lattice import Lattice
 from veridian.query import Query, QueryEngine
 from veridian.store import load, save
+
+logger = logging.getLogger(__name__)
 
 INDEX = (Path(__file__).parent / "static" / "index.html").read_text(encoding="utf-8")
 
@@ -45,9 +48,11 @@ def _handler(lattice: Lattice, persist: Path | None):
                 return
             if parsed.path == "/api/query":
                 qs = parse_qs(parsed.query)
+                subj = (qs.get("subject") or [""])[0] or None
+                pred = (qs.get("predicate") or [""])[0] or None
                 q = Query(
-                    subject=(qs.get("subject") or [None])[0],
-                    predicate=(qs.get("predicate") or [None])[0],
+                    subject=subj,
+                    predicate=pred,
                     min_confidence=float((qs.get("min_conf") or ["0"])[0]),
                 )
                 try:
@@ -93,5 +98,5 @@ def _handler(lattice: Lattice, persist: Path | None):
 def serve(host: str, port: int, path: Path | None = None) -> None:
     lattice = load(path) if path and path.exists() else Lattice()
     httpd = ThreadingHTTPServer((host, port), _handler(lattice, path))
-    print(f"Veridian at http://{host}:{port}/")
+    logger.info("veridian listening host=%s port=%s path=%s", host, port, path)
     httpd.serve_forever()

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import sys
 from pathlib import Path
 
@@ -9,9 +10,12 @@ from veridian.counterfactual import without
 from veridian.errors import VeridianError
 from veridian.factory import claim
 from veridian.lattice import Lattice
+from veridian.logging_config import configure_logging
 from veridian.observation import Triple
 from veridian.query import Query, QueryEngine
 from veridian.store import load, save
+
+logger = logging.getLogger(__name__)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -75,10 +79,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    configure_logging()
     args = build_parser().parse_args(argv)
     try:
         return _dispatch(args)
     except VeridianError as exc:
+        logger.error("cli_error err=%s", exc)
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

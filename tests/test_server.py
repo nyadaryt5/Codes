@@ -1,8 +1,16 @@
+import logging
+from http.server import ThreadingHTTPServer
 from threading import Thread
 from urllib.request import urlopen
 
-from titanfuse.server import Handler
-from http.server import ThreadingHTTPServer
+from titanfuse.server import Handler, serve
+
+
+def test_serve_emits_info_log(caplog, monkeypatch):
+    monkeypatch.setattr(ThreadingHTTPServer, "serve_forever", lambda self: None)
+    with caplog.at_level(logging.INFO, logger="titanfuse.server"):
+        serve("127.0.0.1", 0)
+    assert "titanfuse listening" in caplog.text
 
 
 def test_health_and_recommend():

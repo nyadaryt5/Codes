@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from titanfuse.config import TrainConfig
 from titanfuse.errors import TitanFuseError
 from titanfuse.stack import TitanFuse
+
+logger = logging.getLogger(__name__)
 
 INDEX = """<!DOCTYPE html>
 <html lang="en">
@@ -92,5 +95,5 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve(host: str, port: int) -> None:
     httpd = ThreadingHTTPServer((host, port), Handler)
-    print(f"TitanFuse planner at http://{host}:{port}/")
+    logger.info("titanfuse listening host=%s port=%s", host, port)
     httpd.serve_forever()
