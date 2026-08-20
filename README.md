@@ -4,11 +4,11 @@ One CLI that **combines** three high-impact LLM training projects:
 
 | Layer | Project | Role |
 | --- | --- | --- |
-| Cluster pretrain | [TorchTitan](https://github.com/pytorch/torchtitan) (Meta / PyTorch) | Native PyTorch 4D-parallel (DP × TP × PP × CP) blueprint for multi-GPU / multi-node generative training |
-| Kernel speedups | [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) (LinkedIn) | Triton kernels (RMSNorm, RoPE, SwiGLU, fused CE) — ~**+20%** throughput, ~**−60%** memory on Hugging Face trainers |
-| Consumer fine-tune | [Unsloth](https://github.com/unslothai/unsloth) | Memory-efficient LoRA / QLoRA on a single GPU or desktop |
+| Cluster pretrain | [TorchTitan](https://github.com/pytorch/torchtitan) (Meta / PyTorch) | Native PyTorch 4D-parallel (DP × TP × PP × CP) blueprint |
+| Kernel speedups | [Liger-Kernel](https://github.com/linkedin/Liger-Kernel) (LinkedIn) | Triton kernels — ~**+20%** throughput, ~**−60%** memory on HF trainers |
+| Consumer fine-tune | [Unsloth](https://github.com/unslothai/unsloth) | LoRA / QLoRA on a single GPU |
 
-This repo does **not** vendor those codebases. It is a **router + recipe generator**: pick hardware and workload, get the right backend, install hint, and starter snippet.
+This repo does **not** vendor those codebases. It is a **router, validator, memory heuristic, and recipe generator**.
 
 ```
 workload / hardware
@@ -24,13 +24,14 @@ workload / hardware
 
 ```bash
 pip install -e ".[dev]"
+pytest -q
 ```
 
-Heavy backends stay optional:
+Optional heavy backends:
 
 ```bash
-pip install unsloth          # consumer
-pip install liger-kernel     # HF kernels
+pip install unsloth
+pip install liger-kernel
 # TorchTitan: https://github.com/pytorch/torchtitan
 ```
 
@@ -42,28 +43,20 @@ titanfuse recommend --gpus 1 --vram 16
 titanfuse recommend --pretrain --gpus 16
 titanfuse plan configs/consumer_sft.yaml
 titanfuse plan configs/hf_liger.yaml --json
-titanfuse plan configs/cluster_pretrain.yaml
-titanfuse plan configs/auto.yaml --gpus 4 --vram 80
+titanfuse estimate configs/cluster_pretrain.yaml --gpus 32 --vram 80
+titanfuse serve --host 127.0.0.1 --port 8765
 ```
 
-## Why combine them
+Open `http://127.0.0.1:8765/` for the planner UI (`GET /health`, `GET /api/recommend`).
 
-- **TorchTitan** is the scale-out path: composable 4D parallel pre-training without Megatron-style third-party stacks.
-- **Liger-Kernel** is the easiest win on existing Hugging Face `Trainer` / TRL runs (drop-in `AutoLigerKernelForCausalLM`).
-- **Unsloth** is the path that actually fits on a laptop / 16–24 GB card.
+## Design
 
-Together they cover **pretrain → SFT → consumer LoRA** without three disconnected mental models.
-
-## Config
-
-See `configs/`. `backend: auto` uses GPU count, VRAM, and `workload` to choose.
-
-## Tests
-
-```bash
-pytest -q
-```
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md). Configs live in `configs/`. `backend: auto` uses GPU count, VRAM, and `workload`.
 
 ## License
 
-MIT. Upstream projects keep their own licenses — use them directly for training.
+MIT. Upstream projects keep their own licenses. Use them directly for training.
+
+## Security
+
+Do not commit tokens. Do not paste GitHub PATs into third-party scoring sites. See [SECURITY.md](SECURITY.md).

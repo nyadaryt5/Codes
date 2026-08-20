@@ -1,13 +1,18 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
 
+from titanfuse.errors import ConfigError
+
 BackendName = Literal["auto", "unsloth", "liger", "torchtitan"]
 Workload = Literal["pretrain", "sft", "dpo", "distill"]
+
+VALID_BACKENDS = frozenset({"auto", "unsloth", "liger", "torchtitan"})
+VALID_WORKLOADS = frozenset({"pretrain", "sft", "dpo", "distill"})
 
 
 @dataclass
@@ -26,6 +31,11 @@ class Parallelism:
             * self.pipeline_parallel
             * self.context_parallel
         )
+
+    def validate(self) -> None:
+        for name, value in asdict(self).items():
+            if not isinstance(value, int) or value < 1:
+                raise ConfigError(f"parallelism.{name} must be an integer >= 1")
 
 
 @dataclass
@@ -47,34 +57,78 @@ class TrainConfig:
     parallelism: Parallelism = field(default_factory=Parallelism)
     extra: dict[str, Any] = field(default_factory=dict)
 
+    def validate(self) -> None:
+        if self.backend not in VALID_BACKENDS:
+            raise ConfigError(f"backend must be one of {sorted(VALID_BACKENDS)}")
+        if self.workload not in VALID_WORKLOADS:
+            raise ConfigError(f"workload must be one of {sorted(VALID_WORKLOADS)}")
+        if not self.model.strip():
+            raise ConfigError("model must be a non-empty string")
+        if self.max_seq_len < 32:
+            raise ConfigError("max_seq_len must be >= 32")
+        if self.batch_size < 1 or self.grad_accum < 1:
+            raise ConfigError("batch_size and grad_accum must be >= 1")
+        if self.learning_rate <= 0:
+            raise ConfigError("learning_rate must be positive")
+        if self.epochs < 1:
+            raise ConfigError("epochs must be >= 1")
+        if self.lora_r < 1 or self.lora_alpha < 1:
+            raise ConfigError("lora_r and lora_alpha must be >= 1")
+        self.parallelism.validate()
+
     def resolved_backend(self, gpu_count: int | None = None, vram_gb: float | None = None) -> str:
+        self.validate()
         if self.backend != "auto":
             return self.backend
         gpus = gpu_count if gpu_count is not None else 1
         vram = vram_gb if vram_gb is not None else 16.0
+        if gpus < 1:
+            raise ConfigError("gpu_count must be >= 1")
+        if vram <= 0:
+            raise ConfigError("vram_gb must be positive")
         if self.workload == "pretrain" or gpus >= 8:
             return "torchtitan"
         if gpus >= 2 or (not self.use_4bit and vram >= 40):
             return "liger"
         return "unsloth"
 
+    def global_batch_size(self) -> int:
+        return self.batch_size * self.grad_accum * self.parallelism.data_parallel
+
     def to_dict(self) -> dict[str, Any]:
-        data = asdict(self)
-        return data
+        return asdict(self)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TrainConfig:
-        para = data.pop("parallelism", None) or {}
-        extra = data.pop("extra", {}) or {}
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        kwargs = {k: v for k, v in data.items() if k in known and k != "parallelism"}
-        leftover = {k: v for k, v in data.items() if k not in known}
-        extra = {**extra, **leftover}
-        return cls(parallelism=Parallelism(**para) if para else Parallelism(), extra=extra, **kwargs)
+        if not isinstance(data, dict):
+            raise ConfigError("Config must be a mapping")
+        payload = dict(data)
+        para = payload.pop("parallelism", None) or {}
+        extra = dict(payload.pop("extra", {}) or {})
+        known = {f.name for f in fields(cls)}
+        kwargs = {k: v for k, v in payload.items() if k in known and k != "parallelism"}
+        leftover = {k: v for k, v in payload.items() if k not in known}
+        extra.update(leftover)
+        if not isinstance(para, dict):
+            raise ConfigError("parallelism must be a mapping")
+        try:
+            cfg = cls(
+                parallelism=Parallelism(**para) if para else Parallelism(),
+                extra=extra,
+                **kwargs,
+            )
+        except TypeError as exc:
+            raise ConfigError(str(exc)) from exc
+        cfg.validate()
+        return cfg
 
 
 def load_config(path: str | Path) -> TrainConfig:
-    raw = yaml.safe_load(Path(path).read_text()) or {}
-    if not isinstance(raw, dict):
-        raise ValueError("Config must be a YAML mapping")
+    target = Path(path)
+    if not target.is_file():
+        raise ConfigError(f"Config file not found: {target}")
+    try:
+        raw = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"Invalid YAML: {exc}") from exc
     return TrainConfig.from_dict(raw)

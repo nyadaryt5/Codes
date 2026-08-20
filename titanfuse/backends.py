@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from titanfuse.config import TrainConfig
+from titanfuse.errors import BackendError
 
 
 class Backend(Protocol):
@@ -114,7 +115,7 @@ BACKENDS: dict[str, Backend] = {
 
 def get_backend(name: str) -> Backend:
     if name not in BACKENDS:
-        raise KeyError(f"Unknown backend {name!r}. Choose from {list(BACKENDS)}")
+        raise BackendError(f"Unknown backend {name!r}. Choose from {sorted(BACKENDS)}")
     return BACKENDS[name]
 
 
