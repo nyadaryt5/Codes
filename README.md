@@ -14,6 +14,8 @@ sensor ──► observation ──► worldline ──► lattice
            gen_depth      counterfactual fork
 ```
 
+v0.3 is a **runtime**, not a notebook: hybrid logical clocks, Merkle inclusion proofs, Kalman worldlines, LTL-lite, gossip federation, Byzantine equivocation bans, datalog inference, conformal intervals, Laplace export, geohash, synthetic watermarks, and compact audit certificates.
+
 Not a blockchain. Not a vector DB. Not a knowledge graph. An **append-only DAG of observations** with:
 
 1. **Content-addressed provenance** — SHA-256 of canonical payload + causal parents  

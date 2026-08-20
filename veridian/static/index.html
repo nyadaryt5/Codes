@@ -24,6 +24,7 @@
   <header>
     <h1>Veridian lattice</h1>
     <span class="risk" id="risk">collapse risk —</span>
+    <span class="risk" id="root" style="color:#8aa0c4;font-size:.75rem"></span>
   </header>
   <main>
     <section>
@@ -50,8 +51,9 @@
     async function refresh() {
       const r = await fetch('/api/snapshot');
       const j = await r.json();
-      out.textContent = JSON.stringify({entropy:j.entropy, budget:j.budget, n:j.n, clock:j.clock}, null, 2);
+      out.textContent = JSON.stringify({entropy:j.entropy, budget:j.budget, n:j.n, clock:j.clock, merkle_root:j.merkle_root, hlc:j.hlc}, null, 2);
       risk.textContent = 'collapse risk ' + (j.entropy.collapse_risk ?? '—');
+      document.getElementById('root').textContent = (j.merkle_root || '').slice(0, 16);
       draw(j);
     }
     function draw(j) {

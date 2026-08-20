@@ -51,6 +51,22 @@ def build_parser() -> argparse.ArgumentParser:
     fork.add_argument("path", type=Path)
     fork.add_argument("--drop", nargs="+", required=True)
 
+    pr = sub.add_parser("prove", help="Merkle inclusion proof for an observation id")
+    pr.add_argument("path", type=Path)
+    pr.add_argument("--id", required=True)
+
+    cert = sub.add_parser("certify", help="Audit certificate for a triple")
+    cert.add_argument("path", type=Path)
+    cert.add_argument("--subject", required=True)
+    cert.add_argument("--predicate", required=True)
+    cert.add_argument("--object", required=True, dest="obj")
+
+    kf = sub.add_parser("kalman", help="Kalman filter a numeric worldline")
+    kf.add_argument("path", type=Path)
+    kf.add_argument("--subject", required=True)
+    kf.add_argument("--predicate", required=True)
+    kf.add_argument("--object", required=True, dest="obj")
+
     serve = sub.add_parser("serve", help="Local lattice console")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8787)
@@ -117,6 +133,26 @@ def _dispatch(args: argparse.Namespace) -> int:
         lat = _open(args.path)
         fork = without(lat, set(args.drop))
         json.dump(fork.entropy().to_dict(), sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 0
+    if args.cmd == "prove":
+        lat = _open(args.path)
+        proof = lat.merkle.prove(args.id)
+        json.dump(proof.to_dict() | {"ok": proof.verify()}, sys.stdout, indent=2)
+        sys.stdout.write("\n")
+        return 0
+    if args.cmd == "certify":
+        from veridian.certificate import issue
+
+        lat = _open(args.path)
+        cert = issue(lat, Triple(args.subject, args.predicate, args.obj))
+        json.dump(None if cert is None else cert.to_dict(), sys.stdout, indent=2, default=str)
+        sys.stdout.write("\n")
+        return 0
+    if args.cmd == "kalman":
+        lat = _open(args.path)
+        k = lat.kalman(Triple(args.subject, args.predicate, args.obj))
+        json.dump(None if k is None else k.to_dict(), sys.stdout, indent=2)
         sys.stdout.write("\n")
         return 0
     if args.cmd == "serve":

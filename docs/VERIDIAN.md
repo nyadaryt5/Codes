@@ -17,6 +17,26 @@ Veridian is a **causal worldline lattice**: every claim is an observation with p
 
 This is not a blockchain, not a vector database, and not a knowledge graph. It is a **physics of memory** for software that must survive disagreement.
 
+## v0.3 runtime
+
+Beyond the lattice core:
+
+| Module | Role |
+| --- | --- |
+| `hlc` | Hybrid logical clocks so peers never go backwards |
+| `merkle` | Incremental Merkle log + inclusion proofs |
+| `certificate` | Compact audit: belief + Merkle path + digest |
+| `kalman` | Scalar filter on numeric worldlines |
+| `conformal` | Split-conformal prediction intervals |
+| `temporal` | LTL-lite: always / eventually / until / next |
+| `cone` | Causal past/future; incomparability |
+| `federation` | Gossip ingest in causal order |
+| `quorum` | Stake-weighted majority; equivocation ban |
+| `datalog` | Horn-clause materialization |
+| `privacy` | Laplace mechanism on numeric export |
+| `geo` | Geohash spatial index |
+| `watermark` | Fragile synthetic-value marks |
+
 ## Algebra (sketch)
 
 - Observation ids are SHA-256 of canonical payload + parents.

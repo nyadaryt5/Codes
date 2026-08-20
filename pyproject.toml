@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "veridian"
-version = "0.2.0"
-description = "Causal worldline lattice: decaying belief, provenance, synthetic-depth guards"
+version = "0.3.0"
+description = "Causal worldline runtime: Merkle proofs, HLC, Kalman, LTL, gossip, conformal, DP"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

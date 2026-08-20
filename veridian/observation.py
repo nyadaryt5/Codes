@@ -80,4 +80,16 @@ class Observation:
         payload = dict(data)
         triple = payload.pop("triple")
         parents = tuple(payload.pop("parents", ()))
-        return cls(triple=Triple(**triple), parents=parents, **payload)
+        allowed = {
+            "payload",
+            "agent_id",
+            "sensor_id",
+            "logical_time",
+            "wall_ns",
+            "confidence",
+            "half_life_s",
+            "gen_depth",
+            "obs_id",
+        }
+        kwargs = {k: v for k, v in payload.items() if k in allowed}
+        return cls(triple=Triple(**triple), parents=parents, **kwargs)

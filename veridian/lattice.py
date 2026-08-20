@@ -6,8 +6,12 @@ from typing import Iterable
 from veridian.budget import EnergyBudget
 from veridian.entropy import EntropyReport, report as entropy_report
 from veridian.errors import IntegrityError
+from veridian.hlc import HLC
+from veridian.kalman import KalmanState, filter_values
 from veridian.merge import Belief, merge_belief
+from veridian.merkle import MerkleLog
 from veridian.observation import Observation, Triple
+from veridian.quorum import Quorum
 from veridian.synthetic import GenerationGuard
 from veridian.worldline import Worldline
 
@@ -32,6 +36,9 @@ class Lattice:
         self._lines: dict[str, Worldline] = {}
         self._children: dict[str, list[str]] = defaultdict(list)
         self.clock = 0
+        self.merkle = MerkleLog()
+        self.hlc = HLC(wall_ns=now_ns)
+        self.quorum = Quorum()
 
     def observe(self, obs: Observation) -> Observation:
         self.guard.check(obs)
@@ -40,8 +47,11 @@ class Lattice:
                 raise IntegrityError(f"unknown parent {parent}")
         if obs.obs_id in self._by_id:
             return self._by_id[obs.obs_id]
+        self.quorum.admit(obs)
         self.budget.charge(self.APPEND_COST, "append")
         self._by_id[obs.obs_id] = obs
+        self.merkle.append(obs.obs_id)
+        self.hlc.merge(obs.wall_ns, obs.logical_time, obs.wall_ns)
         key = obs.triple.key()
         if key not in self._lines:
             self._lines[key] = Worldline(obs.triple)
@@ -92,11 +102,30 @@ class Lattice:
     def all_observations(self) -> Iterable[Observation]:
         return self._by_id.values()
 
+    def numeric_series(self, triple: Triple) -> list[float]:
+        line = self.worldline(triple)
+        if line is None:
+            return []
+        out: list[float] = []
+        for o in line.observations():
+            val = o.payload.get("value")
+            if isinstance(val, (int, float)):
+                out.append(float(val))
+        return out
+
+    def kalman(self, triple: Triple) -> KalmanState | None:
+        series = self.numeric_series(triple)
+        if not series:
+            return None
+        return filter_values(series)
+
     def snapshot(self) -> dict:
         return {
             "clock": self.clock,
             "now_ns": self.now_ns,
             "n": len(self._by_id),
+            "merkle_root": self.merkle.root,
+            "hlc": list(self.hlc.tuple()),
             "budget": self.budget.to_dict(),
             "entropy": self.entropy().to_dict(),
             "observations": [o.to_dict() for o in self._by_id.values()],
