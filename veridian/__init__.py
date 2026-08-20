@@ -1,7 +1,8 @@
 """Veridian: a causal worldline lattice for machines that must remember *why*."""
 
 from veridian.budget import EnergyBudget
-from veridian.certificate import Certificate, issue as issue_certificate
+from veridian.certificate import Certificate
+from veridian.certificate import issue as issue_certificate
 from veridian.lattice import Lattice
 from veridian.merge import merge_belief
 from veridian.observation import Observation, Triple

@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pytest
-
 from veridian.budget import EnergyBudget
 from veridian.cli import main
 from veridian.counterfactual import without

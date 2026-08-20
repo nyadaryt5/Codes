@@ -4,7 +4,8 @@ from collections import defaultdict
 from typing import Iterable
 
 from veridian.budget import EnergyBudget
-from veridian.entropy import EntropyReport, report as entropy_report
+from veridian.entropy import EntropyReport
+from veridian.entropy import report as entropy_report
 from veridian.errors import IntegrityError
 from veridian.hlc import HLC
 from veridian.kalman import KalmanState, filter_values

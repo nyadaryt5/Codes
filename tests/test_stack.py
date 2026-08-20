@@ -1,12 +1,11 @@
 from pathlib import Path
 
 import pytest
-
+from titanfuse.backends import get_backend
 from titanfuse.cli import main
 from titanfuse.config import TrainConfig, load_config
 from titanfuse.errors import BackendError, ConfigError
 from titanfuse.estimate import infer_params_billion
-from titanfuse.backends import get_backend
 from titanfuse.stack import TitanFuse
 
 ROOT = Path(__file__).resolve().parents[1]
