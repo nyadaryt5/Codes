@@ -1,0 +1,8 @@
+backend: auto
+workload: sft
+model: meta-llama/Llama-3.2-3B
+dataset: yahma/alpaca-cleaned
+max_seq_len: 2048
+use_4bit: true
+use_liger: true
+output_dir: outputs/auto

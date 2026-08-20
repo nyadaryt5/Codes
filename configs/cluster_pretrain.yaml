@@ -1,0 +1,15 @@
+backend: torchtitan
+workload: pretrain
+model: llama3-8b
+dataset: c4
+max_seq_len: 8192
+batch_size: 1
+learning_rate: 3.0e-4
+use_4bit: false
+use_liger: true
+output_dir: outputs/titan-pretrain
+parallelism:
+  data_parallel: 8
+  tensor_parallel: 2
+  pipeline_parallel: 2
+  context_parallel: 1

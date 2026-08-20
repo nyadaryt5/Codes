@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Veridian — worldline lattice</title>
+  <style>
+    :root { --bg:#07080c; --ink:#e8f0ff; --dim:#8aa0c4; --acc:#6cf0c2; --warn:#ffb86b; --bad:#ff6b8a; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: "IBM Plex Sans", ui-sans-serif, system-ui; background:var(--bg); color:var(--ink); }
+    header { padding:1.2rem 1.6rem; border-bottom:1px solid #1c2436; display:flex; justify-content:space-between; align-items:baseline; }
+    h1 { font-size:1.1rem; letter-spacing:.18em; text-transform:uppercase; margin:0; color:var(--acc); }
+    main { display:grid; grid-template-columns: 1fr 1fr; gap:1rem; padding:1rem; }
+    section { background:#0d1220; border:1px solid #1c2436; padding:1rem; border-radius:8px; }
+    label { display:block; font-size:.75rem; color:var(--dim); margin-top:.5rem; }
+    input, select { width:100%; background:#07080c; color:var(--ink); border:1px solid #2a3550; padding:.4rem; }
+    button { margin-top:.8rem; background:var(--acc); color:#04140f; border:0; padding:.5rem .9rem; font-weight:700; cursor:pointer; }
+    pre { font-size:.78rem; overflow:auto; max-height:22rem; background:#05060a; padding:.8rem; }
+    .risk { font-variant-numeric: tabular-nums; }
+    canvas { width:100%; height:220px; background:#05060a; }
+    @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Veridian lattice</h1>
+    <span class="risk" id="risk">collapse risk —</span>
+    <span class="risk" id="root" style="color:#8aa0c4;font-size:.75rem"></span>
+  </header>
+  <main>
+    <section>
+      <h2>Claim</h2>
+      <label>Subject <input id="s" value="reactor.core"/></label>
+      <label>Predicate <input id="p" value="temperature_c"/></label>
+      <label>Object <input id="o" value="loop-a"/></label>
+      <label>Value <input id="v" value="312.4"/></label>
+      <label>Agent <input id="a" value="sensor.alpha"/></label>
+      <label>Confidence <input id="c" type="number" step="0.05" value="0.9"/></label>
+      <label>Gen depth <input id="d" type="number" value="0"/></label>
+      <button id="go">Append worldline</button>
+      <p style="color:var(--dim);font-size:.8rem">Beliefs decay. Synthetic depth is policy-capped. Conflicts fork — they are not averaged away.</p>
+    </section>
+    <section>
+      <h2>State</h2>
+      <canvas id="cv" width="640" height="220"></canvas>
+      <pre id="out">loading…</pre>
+    </section>
+  </main>
+  <script>
+    const out = document.getElementById('out');
+    const risk = document.getElementById('risk');
+    async function refresh() {
+      const r = await fetch('/api/snapshot');
+      const j = await r.json();
+      out.textContent = JSON.stringify({entropy:j.entropy, budget:j.budget, n:j.n, clock:j.clock, merkle_root:j.merkle_root, hlc:j.hlc}, null, 2);
+      risk.textContent = 'collapse risk ' + (j.entropy.collapse_risk ?? '—');
+      document.getElementById('root').textContent = (j.merkle_root || '').slice(0, 16);
+      draw(j);
+    }
+    function draw(j) {
+      const cv = document.getElementById('cv');
+      const ctx = cv.getContext('2d');
+      ctx.clearRect(0,0,cv.width,cv.height);
+      const obs = j.observations || [];
+      obs.forEach((o, i) => {
+        const x = 20 + (i % 16) * 38;
+        const y = 40 + Math.floor(i / 16) * 40;
+        ctx.fillStyle = o.gen_depth > 0 ? '#ff6b8a' : '#6cf0c2';
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.28); ctx.fill();
+        (o.parents || []).forEach(pid => {
+          const jx = obs.findIndex(z => z.obs_id === pid);
+          if (jx < 0) return;
+          const x2 = 20 + (jx % 16) * 38;
+          const y2 = 40 + Math.floor(jx / 16) * 40;
+          ctx.strokeStyle = '#2a3550';
+          ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x2,y2); ctx.stroke();
+        });
+      });
+    }
+    document.getElementById('go').onclick = async () => {
+      const body = {
+        subject: s.value, predicate: p.value, object: o.value,
+        value: JSON.parse(JSON.stringify(isNaN(Number(v.value)) ? v.value : Number(v.value))),
+        agent_id: a.value, confidence: Number(c.value), gen_depth: Number(d.value)
+      };
+      await fetch('/api/claim', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+      refresh();
+    };
+    refresh();
+  </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "veridian"
+version = "0.3.0"
+description = "Causal worldline runtime: Merkle proofs, HLC, Kalman, LTL, gossip, conformal, DP"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Veridian" }]
+dependencies = [
+  "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+veridian = "veridian.cli:main"
+titanfuse = "titanfuse.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["veridian*", "titanfuse*"]
+
+[tool.setuptools.package-data]
+veridian = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
