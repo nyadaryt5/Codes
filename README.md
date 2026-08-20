@@ -62,7 +62,7 @@ The suite must be green on that venv:
 pytest -q --cov=veridian --cov=titanfuse --cov-report=term-missing --cov-fail-under=60
 ```
 
-Or `make ci` (ruff + mypy + pytest). CI runs the same three jobs on every push (`.github/workflows/ci.yml`).
+Or `make ci` (ruff + mypy + pytest). The same jobs are defined in [docs/ci.yml](docs/ci.yml) (copy to `.github/workflows/ci.yml` if the GitHub App has `workflows` permission).
 
 ```bash
 python examples/reactor_worldline.py
