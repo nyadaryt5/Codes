@@ -1,8 +1,16 @@
+# Python
 __pycache__/
+*.py[cod]
 *.egg-info/
 .venv/
-outputs/
+hexstrike-env/
 .pytest_cache/
 .coverage
 dist/
 build/
+
+# HexStrike runtime artifacts
+hexstrike.log
+*.log
+outputs/
+reports/
